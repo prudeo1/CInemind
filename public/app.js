@@ -2,7 +2,7 @@ const $ = (s) => document.querySelector(s);
 let summaryMode = "spoiler-free",
   selectedGenres = new Set(),
   busy = false,
-  supabase = null,
+  supabaseClient = null,
   currentUser = null,
   latestPicks = [];
 async function api(path, body) {
@@ -92,8 +92,8 @@ function setAccountState(user) {
   }
 }
 async function loadWatchlist() {
-  if (!supabase || !currentUser) return;
-  const { data, error } = await supabase
+  if (!supabaseClient || !currentUser) return;
+  const { data, error } = await supabaseClient
     .from("watchlist")
     .select("*")
     .order("created_at", { ascending: false });
@@ -126,7 +126,7 @@ async function saveMovie(id) {
   }
   const m = latestPicks.find((x) => Number(x.id) === Number(id));
   if (!m) return;
-  const { error } = await supabase
+  const { error } = await supabaseClient
     .from("watchlist")
     .upsert(
       {
@@ -257,12 +257,12 @@ $("#closeAccount").addEventListener("click", () =>
 );
 $("#authForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (!supabase) {
+  if (!supabaseClient) {
     toast("Add your Supabase project settings first.");
     return;
   }
   const email = $("#authEmail").value.trim();
-  const { error } = await supabase.auth.signInWithOtp({
+  const { error } = await supabaseClient.auth.signInWithOtp({
     email,
     options: { emailRedirectTo: location.origin },
   });
@@ -270,14 +270,14 @@ $("#authForm").addEventListener("submit", async (e) => {
   else toast("Sign-in link sent. Check your email.");
 });
 $("#signOutBtn").addEventListener("click", async () => {
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
   setAccountState(null);
   toast("Signed out.");
 });
 $("#watchlistItems").addEventListener("click", async (e) => {
   const b = e.target.closest("[data-remove]");
-  if (!b || !supabase) return;
-  const { error } = await supabase
+  if (!b || !supabaseClient) return;
+  const { error } = await supabaseClient
     .from("watchlist")
     .delete()
     .eq("id", b.dataset.remove);
@@ -299,15 +299,15 @@ async function boot() {
     $(".status-dot").style.background =
       status.aiEnabled && status.tmdbEnabled ? "#83d9b5" : "#e5b86b";
     if (config.supabaseUrl && config.supabaseAnonKey && window.supabase) {
-      supabase = window.supabase.createClient(
+      supabaseClient = window.supabase.createClient(
         config.supabaseUrl,
         config.supabaseAnonKey
       );
       const {
         data: { session },
-      } = await supabase.auth.getSession();
+      } = await supabaseClient.auth.getSession();
       setAccountState(session?.user || null);
-      supabase.auth.onAuthStateChange((_event, session) =>
+      supabaseClient.auth.onAuthStateChange((_event, session) =>
         setAccountState(session?.user || null)
       );
     } else {
