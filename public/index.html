@@ -1,8 +1,335 @@
-<!doctype html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080b12"><meta name="description" content="CINEMIND — your personal AI movie companion."><title>CINEMIND — Find your next favourite</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/style.css"></head>
-<body><div class="ambient a1"></div><div class="ambient a2"></div><header class="topbar"><a class="brand" href="#home"><span class="brand-mark">C</span><span>CINE<span class="brand-light">MIND</span></span></a><nav><a class="nav-link active" href="#discover">Discover</a><a class="nav-link" href="#summarize">Summarize</a><a class="nav-link" href="#recommend">Recommendations</a></nav><div class="top-right"><span class="status-dot"></span><span class="status-label" id="statusLabel">DEMO MODE</span><button class="avatar" id="authToggle" aria-label="Open account and watchlist">P</button></div></header>
-<aside class="account-panel glass-panel hidden" id="accountPanel"><div class="account-top"><div><span class="result-kicker">YOUR CINEMIND ACCOUNT</span><p id="authMessage">Sign in to sync your watchlist across devices.</p></div><button class="icon-button" id="closeAccount" aria-label="Close account panel">×</button></div><form id="authForm" class="auth-form"><input id="authEmail" type="email" placeholder="Your email address" autocomplete="email" required><button class="primary-btn" type="submit">Email me a sign-in link ↗</button></form><button class="text-btn hidden" id="signOutBtn" type="button">Sign out</button><div class="watchlist-head"><b>My watchlist</b><span id="watchlistCount">0 SAVED</span></div><div id="watchlistItems" class="watchlist-items"><p class="muted-note">Sign in to save films for later.</p></div></aside><main id="home"><section class="hero" id="discover"><div class="hero-copy"><div class="eyebrow"><span class="eyebrow-line"></span> YOUR PERSONAL FILM INTELLIGENCE</div><h1>Every story<br>starts with <em>you.</em></h1><p class="hero-sub">Tell us what you're in the mood for. We'll find the story you didn't know you needed.</p><div class="hero-actions"><a class="primary-btn" href="#recommend">Find my next movie <span>↗</span></a><a class="text-btn" href="#summarize">Explore a film <span>↓</span></a></div><div class="hero-meta"><div class="avatar-stack"><i>✦</i><i>◉</i><i>✧</i></div><span>Made for people who love a good story.</span></div></div><div class="orb-stage"><div class="orb-halo halo-one"></div><div class="orb-halo halo-two"></div><div class="orb-ring ring-a"></div><div class="orb-ring ring-b"></div><div class="globe" id="heroGlobe"><div class="globe-shine"></div><div class="globe-grid"></div><div class="globe-land land-one"></div><div class="globe-land land-two"></div><div class="globe-land land-three"></div><div class="globe-core"></div></div><div class="orbit-dot dot-one"></div><div class="orbit-dot dot-two"></div><div class="orbit-dot dot-three"></div><div class="orb-caption"><span class="pulse"></span> YOUR STORY ENGINE <span class="caption-dash">/</span> ONLINE</div><div class="orb-coordinate">CINEMIND · 01</div></div><div class="hero-index">01 <span>/</span> 03</div></section>
-<section class="section intro-strip"><div class="strip-item"><span class="strip-number">01</span><div><b>Understand</b><small>Know the story before you press play.</small></div></div><div class="strip-item"><span class="strip-number">02</span><div><b>Discover</b><small>Find films that fit your exact mood.</small></div></div><div class="strip-item"><span class="strip-number">03</span><div><b>Experience</b><small>Spend less time searching. More time watching.</small></div></div></section>
-<section class="section tool-section" id="summarize"><div class="section-heading"><div><div class="eyebrow">01 / FILM EXPLORER</div><h2>Get the <em>whole picture.</em></h2></div><p>Curious about a film? Get the story, themes and the details that make it worth your time.</p></div><div class="glass-panel summary-panel"><div class="panel-top"><span class="panel-label"><span class="tiny-spark">✳</span> CINEMIND ANALYSIS</span><span class="panel-step">01 — 02</span></div><form id="summaryForm"><label for="movieTitle">WHAT ARE WE WATCHING?</label><div class="search-field"><span class="search-icon">⌕</span><input id="movieTitle" placeholder="Enter a movie title… e.g. Interstellar" autocomplete="off" required><button type="submit" class="round-submit" aria-label="Analyze movie">↗</button></div><div class="form-bottom"><div class="mode-switch"><button type="button" class="mode active" data-mode="spoiler-free">Spoiler-free</button><button type="button" class="mode" data-mode="full">Full story</button></div><span class="hint">Choose your level of detail</span></div></form><div class="result hidden" id="summaryResult"><div class="result-head"><span class="result-kicker">YOUR FILM BRIEF</span><button class="icon-button" id="clearSummary" title="Clear result">×</button></div><div class="result-content" id="summaryContent"></div></div></div></section>
-<section class="section recommend-section" id="recommend"><div class="section-heading"><div><div class="eyebrow">02 / PERSONAL DISCOVERY</div><h2>Set the mood.<br><em>We'll find the film.</em></h2></div><p>Don't know what to watch? Describe the feeling, not just the genre. That's where the good recommendations begin.</p></div><div class="recommend-layout"><div class="glass-panel preference-panel"><form id="recommendForm"><label for="moodInput">DESCRIBE YOUR IDEAL MOVIE</label><textarea id="moodInput" rows="3" placeholder="Something mind-bending, emotional, with a twist that stays with me…"></textarea><label class="second-label">PICK YOUR GENRES <span class="optional">(OPTIONAL)</span></label><div class="chips" id="genreChips"><button type="button" class="chip" data-genre="Sci-Fi">Sci-Fi</button><button type="button" class="chip" data-genre="Thriller">Thriller</button><button type="button" class="chip" data-genre="Drama">Drama</button><button type="button" class="chip" data-genre="Comedy">Comedy</button><button type="button" class="chip" data-genre="Mystery">Mystery</button><button type="button" class="chip" data-genre="Action">Action</button><button type="button" class="chip" data-genre="Animation">Animation</button><button type="button" class="chip" data-genre="Horror">Horror</button></div><div class="select-row"><div><label for="eraSelect">RELEASE ERA</label><select id="eraSelect"><option>Any era</option><option>Classics (before 1990)</option><option>90s & 2000s</option><option>2010s</option><option>2020s</option></select></div><div><label for="avoidInput">NOT IN THE MOOD FOR</label><input id="avoidInput" placeholder="e.g. romance, horror"></div></div><button type="submit" class="primary-btn full-btn">Find my films <span>↗</span></button></form></div><div class="recommend-visual"><div class="mini-orbit"><div class="mini-globe"><div class="mini-map"></div></div><span class="mini-orbit-dot"></span><span class="mini-orbit-dot two"></span></div><div class="visual-note"><span class="note-star">✳</span><div><b>A little more human.</b><p>Recommendations shaped around your taste, not just an algorithm.</p></div></div><div class="visual-code">TASTE PROFILE / 002</div></div></div><div class="recommend-results hidden" id="recommendResult"><div class="result-head"><span class="result-kicker">CURATED FOR YOUR MOOD</span><span class="result-kicker" id="recommendSource"></span></div><p id="recommendIntro"></p><div class="movie-grid" id="movieGrid"></div><div class="result-content ai-recommend-text" id="recommendText"></div></div></section>
-<section class="closing"><div class="closing-orb">✳</div><div class="eyebrow">THE NEXT GREAT STORY IS OUT THERE</div><h2>Make tonight<br><em>movie night.</em></h2><a href="#recommend" class="primary-btn">Find your next film <span>↗</span></a></section></main><footer><a class="brand" href="#home"><span class="brand-mark">C</span><span>CINE<span class="brand-light">MIND</span></span></a><span>BUILT FOR THE LOVE OF STORIES.</span><span class="tmdb-credit"><img src="https://www.themoviedb.org/assets/2/v4/logos/stacked-blue.svg" alt="TMDB logo">This product uses the TMDB API but is not endorsed or certified by TMDB.</span><span>© 2026 CINEMIND</span></footer><div class="toast" id="toast"></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/app.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#080b12" />
+    <meta
+      name="description"
+      content="CINEMIND — your personal AI movie companion."
+    />
+    <title>CINEMIND — Find your next favourite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="ambient a1"></div>
+    <div class="ambient a2"></div>
+    <header class="topbar">
+      <a class="brand" href="#home"
+        ><span class="brand-mark">C</span
+        ><span>CINE<span class="brand-light">MIND</span></span></a
+      >
+      <nav>
+        <a class="nav-link active" href="#discover">Discover</a
+        ><a class="nav-link" href="#summarize">Summarize</a
+        ><a class="nav-link" href="#recommend">Recommendations</a>
+      </nav>
+      <div class="top-right">
+        <span class="status-dot"></span
+        ><span class="status-label" id="statusLabel">DEMO MODE</span
+        ><button
+          class="avatar"
+          id="authToggle"
+          aria-label="Open account and watchlist"
+        >
+          P
+        </button>
+      </div>
+    </header>
+    <aside class="account-panel glass-panel hidden" id="accountPanel">
+      <div class="account-top">
+        <div>
+          <span class="result-kicker">YOUR CINEMIND ACCOUNT</span>
+          <p id="authMessage">Sign in to sync your watchlist across devices.</p>
+        </div>
+        <button
+          class="icon-button"
+          id="closeAccount"
+          aria-label="Close account panel"
+        >
+          ×
+        </button>
+      </div>
+      <form id="authForm" class="auth-form">
+        <input
+          id="authEmail"
+          type="email"
+          placeholder="Your email address"
+          autocomplete="email"
+          required
+        /><button class="primary-btn" type="submit">
+          Email me a sign-in link ↗
+        </button>
+      </form>
+      <button class="text-btn hidden" id="signOutBtn" type="button">
+        Sign out
+      </button>
+      <div class="watchlist-head">
+        <b>My watchlist</b><span id="watchlistCount">0 SAVED</span>
+      </div>
+      <div id="watchlistItems" class="watchlist-items">
+        <p class="muted-note">Sign in to save films for later.</p>
+      </div>
+    </aside>
+    <main id="home">
+      <section class="hero" id="discover">
+        <div class="hero-copy">
+          <div class="eyebrow">
+            <span class="eyebrow-line"></span> YOUR PERSONAL FILM INTELLIGENCE
+          </div>
+          <h1>Every story<br />starts with <em>you.</em></h1>
+          <p class="hero-sub">
+            Tell us what you're in the mood for. We'll find the story you didn't
+            know you needed.
+          </p>
+          <div class="hero-actions">
+            <a class="primary-btn" href="#recommend"
+              >Find my next movie <span>↗</span></a
+            ><a class="text-btn" href="#summarize"
+              >Explore a film <span>↓</span></a
+            >
+          </div>
+          <div class="hero-meta">
+            <div class="avatar-stack"><i>✦</i><i>◉</i><i>✧</i></div>
+            <span>Made for people who love a good story.</span>
+          </div>
+        </div>
+        <div class="orb-stage">
+          <div class="orb-halo halo-one"></div>
+          <div class="orb-halo halo-two"></div>
+          <div class="orb-ring ring-a"></div>
+          <div class="orb-ring ring-b"></div>
+          <div class="globe" id="heroGlobe">
+            <div class="globe-shine"></div>
+            <div class="globe-grid"></div>
+            <div class="globe-land land-one"></div>
+            <div class="globe-land land-two"></div>
+            <div class="globe-land land-three"></div>
+            <div class="globe-core"></div>
+          </div>
+          <div class="orbit-dot dot-one"></div>
+          <div class="orbit-dot dot-two"></div>
+          <div class="orbit-dot dot-three"></div>
+          <div class="orb-caption">
+            <span class="pulse"></span> YOUR STORY ENGINE
+            <span class="caption-dash">/</span> ONLINE
+          </div>
+          <div class="orb-coordinate">CINEMIND · 01</div>
+        </div>
+        <div class="hero-index">01 <span>/</span> 03</div>
+      </section>
+      <section class="section intro-strip">
+        <div class="strip-item">
+          <span class="strip-number">01</span>
+          <div>
+            <b>Understand</b
+            ><small>Know the story before you press play.</small>
+          </div>
+        </div>
+        <div class="strip-item">
+          <span class="strip-number">02</span>
+          <div>
+            <b>Discover</b><small>Find films that fit your exact mood.</small>
+          </div>
+        </div>
+        <div class="strip-item">
+          <span class="strip-number">03</span>
+          <div>
+            <b>Experience</b
+            ><small>Spend less time searching. More time watching.</small>
+          </div>
+        </div>
+      </section>
+      <section class="section tool-section" id="summarize">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">01 / FILM EXPLORER</div>
+            <h2>Get the <em>whole picture.</em></h2>
+          </div>
+          <p>
+            Curious about a film? Get the story, themes and the details that
+            make it worth your time.
+          </p>
+        </div>
+        <div class="glass-panel summary-panel">
+          <div class="panel-top">
+            <span class="panel-label"
+              ><span class="tiny-spark">✳</span> CINEMIND ANALYSIS</span
+            ><span class="panel-step">01 — 02</span>
+          </div>
+          <form id="summaryForm">
+            <label for="movieTitle">WHAT ARE WE WATCHING?</label>
+            <div class="search-field">
+              <span class="search-icon">⌕</span
+              ><input
+                id="movieTitle"
+                placeholder="Enter a movie title… e.g. Interstellar"
+                autocomplete="off"
+                required
+              /><button
+                type="submit"
+                class="round-submit"
+                aria-label="Analyze movie"
+              >
+                ↗
+              </button>
+            </div>
+            <div class="form-bottom">
+              <div class="mode-switch">
+                <button
+                  type="button"
+                  class="mode active"
+                  data-mode="spoiler-free"
+                >
+                  Spoiler-free</button
+                ><button type="button" class="mode" data-mode="full">
+                  Full story
+                </button>
+              </div>
+              <span class="hint">Choose your level of detail</span>
+            </div>
+          </form>
+          <div class="result hidden" id="summaryResult">
+            <div class="result-head">
+              <span class="result-kicker">YOUR FILM BRIEF</span
+              ><button
+                class="icon-button"
+                id="clearSummary"
+                title="Clear result"
+              >
+                ×
+              </button>
+            </div>
+            <div class="result-content" id="summaryContent"></div>
+          </div>
+        </div>
+      </section>
+      <section class="section recommend-section" id="recommend">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">02 / PERSONAL DISCOVERY</div>
+            <h2>Set the mood.<br /><em>We'll find the film.</em></h2>
+          </div>
+          <p>
+            Don't know what to watch? Describe the feeling, not just the genre.
+            That's where the good recommendations begin.
+          </p>
+        </div>
+        <div class="recommend-layout">
+          <div class="glass-panel preference-panel">
+            <form id="recommendForm">
+              <label for="moodInput">DESCRIBE YOUR IDEAL MOVIE</label
+              ><textarea
+                id="moodInput"
+                rows="3"
+                placeholder="Something mind-bending, emotional, with a twist that stays with me…"
+              ></textarea
+              ><label class="second-label"
+                >PICK YOUR GENRES
+                <span class="optional">(OPTIONAL)</span></label
+              >
+              <div class="chips" id="genreChips">
+                <button type="button" class="chip" data-genre="Sci-Fi">
+                  Sci-Fi</button
+                ><button type="button" class="chip" data-genre="Thriller">
+                  Thriller</button
+                ><button type="button" class="chip" data-genre="Drama">
+                  Drama</button
+                ><button type="button" class="chip" data-genre="Comedy">
+                  Comedy</button
+                ><button type="button" class="chip" data-genre="Mystery">
+                  Mystery</button
+                ><button type="button" class="chip" data-genre="Action">
+                  Action</button
+                ><button type="button" class="chip" data-genre="Animation">
+                  Animation</button
+                ><button type="button" class="chip" data-genre="Horror">
+                  Horror
+                </button>
+              </div>
+              <div class="select-row">
+                <div>
+                  <label for="eraSelect">RELEASE ERA</label
+                  ><select id="eraSelect">
+                    <option>Any era</option>
+                    <option>Classics (before 1990)</option>
+                    <option>90s & 2000s</option>
+                    <option>2010s</option>
+                    <option>2020s</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="avoidInput">NOT IN THE MOOD FOR</label
+                  ><input id="avoidInput" placeholder="e.g. romance, horror" />
+                </div>
+              </div>
+              <button type="submit" class="primary-btn full-btn">
+                Find my films <span>↗</span>
+              </button>
+            </form>
+          </div>
+          <div class="recommend-visual">
+            <div class="mini-orbit">
+              <div class="mini-globe"><div class="mini-map"></div></div>
+              <span class="mini-orbit-dot"></span
+              ><span class="mini-orbit-dot two"></span>
+            </div>
+            <div class="visual-note">
+              <span class="note-star">✳</span>
+              <div>
+                <b>A little more human.</b>
+                <p>
+                  Recommendations shaped around your taste, not just an
+                  algorithm.
+                </p>
+              </div>
+            </div>
+            <div class="visual-code">TASTE PROFILE / 002</div>
+          </div>
+        </div>
+        <div class="recommend-results hidden" id="recommendResult">
+          <div class="result-head">
+            <span class="result-kicker">CURATED FOR YOUR MOOD</span
+            ><span class="result-kicker" id="recommendSource"></span>
+          </div>
+          <p id="recommendIntro"></p>
+          <div class="movie-grid" id="movieGrid"></div>
+          <div
+            class="result-content ai-recommend-text"
+            id="recommendText"
+          ></div>
+        </div>
+      </section>
+      <section class="closing">
+        <div class="closing-orb">✳</div>
+        <div class="eyebrow">THE NEXT GREAT STORY IS OUT THERE</div>
+        <h2>Make tonight<br /><em>movie night.</em></h2>
+        <a href="#recommend" class="primary-btn"
+          >Find your next film <span>↗</span></a
+        >
+      </section>
+    </main>
+    <footer>
+      <a class="brand" href="#home"
+        ><span class="brand-mark">C</span
+        ><span>CINE<span class="brand-light">MIND</span></span></a
+      ><span>BUILT FOR THE LOVE OF STORIES.</span
+      ><span class="tmdb-credit"
+        ><img
+          src="https://www.themoviedb.org/assets/2/v4/logos/stacked-blue.svg"
+          alt="TMDB logo"
+        />This product uses the TMDB API but is not endorsed or certified by
+        TMDB.</span
+      ><span>© 2026 CINEMIND</span>
+    </footer>
+    <div class="toast" id="toast"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>
