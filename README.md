@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CINEMIND — AI Movie Companion
 
 CINEMIND is a responsive, liquid-glass movie discovery app with an animated globe, live movie metadata, AI-assisted summaries, mood-based recommendations, and an optional account-backed watchlist.
@@ -82,3 +83,9 @@ Deploy the Node app to a Node-compatible host (Render, Railway, Fly.io, or a VPS
 - Add monitoring, backups, automated tests, and a privacy policy before accepting public users.
 - Gemini summaries are AI-generated interpretations, not authoritative plot records. The app grounds responses in TMDB metadata and prompts the model not to invent unsupported details, but outputs can still be inaccurate. Users should choose spoiler-free mode to avoid intentional ending disclosures.
 - Supabase email authentication requires email delivery configuration and allowed redirect URLs.
+=======
+# Cinemind
+AI-powered movie recommendation and watchlist app
+>>>>>>> origin/main
+
+
