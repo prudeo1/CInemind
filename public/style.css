@@ -376,6 +376,40 @@ nav {
   margin-top: 2px;
 }
 
+.cat-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-bottom: 18px;
+  padding-bottom: 4px;
+}
+.cat-tabs::-webkit-scrollbar {
+  display: none;
+}
+.cat-tab {
+  flex: 0 0 auto;
+  border: 2px solid var(--line);
+  background: transparent;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font: 700 13px var(--sans);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.15s;
+}
+.cat-tab:hover {
+  border-color: var(--accent);
+}
+.cat-tab:active {
+  transform: scale(0.95);
+}
+.cat-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #111;
+}
+
 /* marquee */
 .marquee {
   background: var(--accent);

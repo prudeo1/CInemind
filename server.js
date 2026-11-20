@@ -14,6 +14,48 @@ app.use(express.static(path.join(__dirname, 'public')));
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 const GENRES = { Action:28, Adventure:12, Animation:16, Comedy:35, Crime:80, Documentary:99, Drama:18, Family:10751, Fantasy:14, History:36, Horror:27, Music:10402, Mystery:9648, Romance:10749, 'Sci-Fi':878, Thriller:53, War:10752, Western:37 };
+
+// Regions / languages the user can pick. `lang` = TMDB original language, `country` = origin country.
+const REGIONS = {
+  'Any region': {},
+  'American (Hollywood)': { country: 'US' },
+  'Korean': { lang: 'ko' },
+  'Japanese': { lang: 'ja' },
+  'Anime': { lang: 'ja', genre: 16 },
+  'Bollywood / Indian': { lang: 'hi' },
+  'Nollywood (Nigerian)': { country: 'NG' },
+  'Chinese / Hong Kong': { lang: 'zh|cn' },
+  'French': { lang: 'fr' },
+  'Spanish / Latin American': { lang: 'es' },
+  'Italian': { lang: 'it' },
+  'German': { lang: 'de' },
+  'Turkish': { lang: 'tr' },
+  'Thai': { lang: 'th' },
+  'British': { country: 'GB' },
+  'Scandinavian': { lang: 'sv|da|no|fi' }
+};
+// If no region is chosen, try to read one from the mood text ("a korean romance", "anime", ...).
+const REGION_HINTS = [
+  [/anime|ghibli|manga|shonen/i, 'Anime'],
+  [/korean|k-?drama|korea/i, 'Korean'],
+  [/japan/i, 'Japanese'],
+  [/bollywood|hindi|indian/i, 'Bollywood / Indian'],
+  [/nollywood|nigeria/i, 'Nollywood (Nigerian)'],
+  [/chinese|cantonese|hong kong|mandarin/i, 'Chinese / Hong Kong'],
+  [/french|france/i, 'French'],
+  [/spanish|latin|mexican|argentin/i, 'Spanish / Latin American'],
+  [/italian/i, 'Italian'],
+  [/german/i, 'German'],
+  [/turkish/i, 'Turkish'],
+  [/thai/i, 'Thai'],
+  [/british|\buk\b|english film/i, 'British'],
+  [/american|hollywood/i, 'American (Hollywood)']
+];
+function detectRegion(mood) {
+  for (const [re, name] of REGION_HINTS) if (re.test(mood || '')) return name;
+  return 'Any region';
+}
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 const hasTmdb = () => Boolean(process.env.TMDB_ACCESS_TOKEN);
 const hasGemini = () => Boolean(process.env.GEMINI_API_KEY);
 
@@ -44,7 +86,22 @@ function safeText(v, max=240) { return typeof v === 'string' ? v.trim().slice(0,
 app.get('/api/config', (_req,res) => res.json({ supabaseUrl:process.env.SUPABASE_URL || '', supabaseAnonKey:process.env.SUPABASE_ANON_KEY || '' }));
 app.get('/api/status', (_req,res) => res.json({ aiEnabled:hasGemini(), tmdbEnabled:hasTmdb(), databaseEnabled:Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY), mode:hasGemini() && hasTmdb() ? 'LIVE AI' : 'SETUP REQUIRED' }));
 app.get('/api/movies', async (req,res) => {
-  try { const data = await tmdb('/movie/popular',{page:1}); res.json({results:(data.results||[]).map(movieShape)}); }
+  try {
+    const regionName = REGIONS[req.query.region] ? req.query.region : 'Any region';
+    const r = REGIONS[regionName];
+    let results;
+    if (regionName === 'Any region') {
+      results = (await tmdb('/movie/popular',{page:1})).results || [];
+    } else {
+      const p = { include_adult:false, sort_by:'popularity.desc', 'vote_count.gte':30, page:1 };
+      if (r.country) p.with_origin_country = r.country;
+      if (r.genre) p.with_genres = r.genre;
+      const langs = r.lang ? r.lang.split('|') : [null];
+      const lists = await Promise.all(langs.map(l => tmdb('/discover/movie', { ...p, ...(l ? { with_original_language: l } : {}) })));
+      results = lists.flatMap(x => x.results || []).sort((a,b) => (b.popularity||0) - (a.popularity||0));
+    }
+    res.json({results:results.map(movieShape)});
+  }
   catch(e) { res.status(503).json({error:e.message}); }
 });
 app.get('/api/search', async (req,res) => {
@@ -77,19 +134,34 @@ app.post('/api/summarize', async (req,res) => {
 app.post('/api/recommend', async (req,res) => {
   const mood=safeText(req.body?.mood,500), avoid=safeText(req.body?.avoid,180), era=safeText(req.body?.era,40)||'Any era';
   const genres=Array.isArray(req.body?.genres)?req.body.genres.filter(g=>GENRES[g]).slice(0,6):[];
-  if(!mood && !genres.length) return res.status(400).json({error:'Tell me what kind of movie you feel like watching.'});
+  let regionName = REGIONS[req.body?.region] ? req.body.region : 'Any region';
+  if (regionName === 'Any region') regionName = detectRegion(mood);
+  const region = REGIONS[regionName];
+  if(!mood && !genres.length && regionName==='Any region') return res.status(400).json({error:'Tell me what kind of movie you feel like watching.'});
   try {
-    let discoverParams={include_adult:false,sort_by:'popularity.desc',page:1,'vote_count.gte':80};
-    if(genres.length) discoverParams.with_genres=genres.map(g=>GENRES[g]).join('|');
-    if(era==='Classics (before 1990)') discoverParams['primary_release_date.lte']='1989-12-31';
-    if(era==='90s & 2000s'){discoverParams['primary_release_date.gte']='1990-01-01';discoverParams['primary_release_date.lte']='2009-12-31';}
-    if(era==='2010s'){discoverParams['primary_release_date.gte']='2010-01-01';discoverParams['primary_release_date.lte']='2019-12-31';}
-    if(era==='2020s') discoverParams['primary_release_date.gte']='2020-01-01';
-    const pages=await Promise.all([tmdb('/discover/movie',discoverParams),tmdb('/movie/top_rated',{page:1})]);
-    let pool=[...(pages[0].results||[]),...(pages[1].results||[])];
-    const unique=[...new Map(pool.map(m=>[m.id,m])).values()].filter(m=>m.poster_path && !m.adult).slice(0,35).map(movieShape);
-    if(!unique.length) return res.status(404).json({error:'No matching films came back. Try a broader genre or era.'});
-    const prompt=`You are CINEMIND, a film recommendation engine. Choose the 6 best-fitting DISTINCT movies from the supplied candidate list ONLY. Never invent a title or ID. Match the user's mood semantically, respect selected genres, release era and exclusions. Exclude films whose genre or synopsis clearly conflicts with the avoid field. Return strict JSON: {"intro":"one concise personalised sentence","picks":[{"id":number,"reason":"one specific sentence explaining the match"}]}. Do not add markdown.\nUSER MOOD: ${mood||'Not specified'}\nGENRES: ${genres.join(', ')||'Any'}\nERA: ${era}\nAVOID: ${avoid||'Nothing'}\nCANDIDATES: ${JSON.stringify(unique.map(m=>({id:m.id,title:m.title,year:m.year,genres:m.genres,overview:m.overview,rating:m.rating})))}`;
+    const base={include_adult:false,'vote_count.gte':region.lang||region.country?40:80};
+    if(region.genre){ base.with_genres=[region.genre,...genres.slice(0,1).map(g=>GENRES[g]).filter(g=>g!==region.genre)].join(','); }
+    else if(genres.length) base.with_genres=genres.map(g=>GENRES[g]).join('|');
+    if(region.country) base.with_origin_country=region.country;
+    if(era==='Classics (before 1990)') base['primary_release_date.lte']='1989-12-31';
+    if(era==='90s & 2000s'){base['primary_release_date.gte']='1990-01-01';base['primary_release_date.lte']='2009-12-31';}
+    if(era==='2010s'){base['primary_release_date.gte']='2010-01-01';base['primary_release_date.lte']='2019-12-31';}
+    if(era==='2020s') base['primary_release_date.gte']='2020-01-01';
+    // Several pages, two sort orders: popular AND critically acclaimed, so results are broad, not just blockbusters.
+    const langs=region.lang?region.lang.split('|'):[null];
+    const multi=langs.length>1, strict=Boolean(region.lang||region.country);
+    const jobs=[];
+    for(const lang of langs){
+      const b2={...base,...(lang?{with_original_language:lang}:{})};
+      for(const page of (multi?[1]:[1,2,3])) jobs.push(tmdb('/discover/movie',{...b2,sort_by:'popularity.desc',page}));
+      for(const page of (multi?[1]:[1,2])) jobs.push(tmdb('/discover/movie',{...b2,sort_by:'vote_average.desc','vote_count.gte':strict?150:500,page}));
+    }
+    const settled=await Promise.allSettled(jobs);
+    const pool=settled.filter(x=>x.status==='fulfilled').flatMap(x=>x.value.results||[]);
+    if(!pool.length && settled[0]?.status==='rejected') throw settled[0].reason;
+    const unique=shuffle([...new Map(pool.map(m=>[m.id,m])).values()].filter(m=>m.poster_path && !m.adult)).slice(0,60).map(movieShape);
+    if(!unique.length) return res.status(404).json({error:'No matching films came back. Try a broader genre, region or era.'});
+    const prompt=`You are CINEMIND, a film recommendation engine. Choose the 6 best-fitting DISTINCT movies from the supplied candidate list ONLY. Never invent a title or ID. Aim for variety (different decades, countries and tones where the filters allow). Match the user's mood semantically, respect selected genres, release era and exclusions. Exclude films whose genre or synopsis clearly conflicts with the avoid field. Return strict JSON: {"intro":"one concise personalised sentence","picks":[{"id":number,"reason":"one specific sentence explaining the match"}]}. Do not add markdown.\nUSER MOOD: ${mood||'Not specified'}\nGENRES: ${genres.join(', ')||'Any'}\nERA: ${era}\nREGION/LANGUAGE: ${regionName}\nAVOID: ${avoid||'Nothing'}\nCANDIDATES: ${JSON.stringify(unique.map(m=>({id:m.id,title:m.title,year:m.year,genres:m.genres,overview:m.overview,rating:m.rating})))}`;
     let picks=[], intro='A selection based on your preferences.';
     const raw=await gemini(prompt,true);
     if(raw){try{const parsed=JSON.parse(raw.replace(/^```json\s*/i,'').replace(/```$/,'').trim());intro=safeText(parsed.intro,220)||intro;const byId=new Map(unique.map(m=>[m.id,m]));picks=(parsed.picks||[]).filter(p=>byId.has(Number(p.id))).slice(0,6).map(p=>({...byId.get(Number(p.id)),reason:safeText(p.reason,240)}));}catch(err){console.error('Could not parse recommendation JSON',err.message);}}

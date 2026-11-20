@@ -230,6 +230,7 @@ $("#recommendForm").addEventListener("submit", async (e) => {
       mood,
       genres,
       era: $("#eraSelect").value,
+      region: $("#regionSelect").value,
       avoid: $("#avoidInput").value.trim(),
     });
     latestPicks = d.picks || [];
@@ -365,35 +366,56 @@ $("#footerAccount").addEventListener("click", (e) => {
   });
 })();
 
-// Trending carousel (uses the existing GET /api/movies endpoint)
-(async function () {
+// Trending carousel with category tabs (uses GET /api/movies?region=...)
+(function () {
   const track = $("#posterTrack");
+  let reqId = 0;
   const scrollByCards = (dir) =>
     track.scrollBy({ left: dir * track.clientWidth * 0.8, behavior: "smooth" });
   $("#carPrev").addEventListener("click", () => scrollByCards(-1));
   $("#carNext").addEventListener("click", () => scrollByCards(1));
-  try {
-    const d = await api("/api/movies");
-    const films = (d.results || []).filter((m) => m.poster).slice(0, 12);
-    if (!films.length) throw new Error("none");
-    track.innerHTML = films
-      .map(
-        (m) =>
-          `<button type="button" class="poster-card" data-title="${escapeHtml(
-            m.title
-          )}"><img src="${escapeHtml(m.poster)}" alt="${escapeHtml(
-            m.title
-          )} poster" loading="lazy"><span>${escapeHtml(
-            m.title
-          )}<small>${escapeHtml(m.year)} · ★ ${escapeHtml(
-            m.rating
-          )}</small></span></button>`
-      )
-      .join("");
-    $("#carouselCount").textContent = `(${films.length} films)`;
-  } catch (e) {
-    $("#posterCarousel").classList.add("hidden");
+  async function load(region) {
+    const id = ++reqId;
+    track.innerHTML = '<p class="muted-note">Loading films…</p>';
+    $("#carouselCount").textContent = "";
+    try {
+      const d = await api("/api/movies?region=" + encodeURIComponent(region));
+      if (id !== reqId) return;
+      const films = (d.results || []).filter((m) => m.poster).slice(0, 20);
+      if (!films.length) throw new Error("No films found for this category.");
+      track.innerHTML = films
+        .map(
+          (m) =>
+            `<button type="button" class="poster-card" data-title="${escapeHtml(
+              m.title
+            )}"><img src="${escapeHtml(m.poster)}" alt="${escapeHtml(
+              m.title
+            )} poster" loading="lazy"><span>${escapeHtml(
+              m.title
+            )}<small>${escapeHtml(m.year)} · ★ ${escapeHtml(
+              m.rating
+            )}</small></span></button>`
+        )
+        .join("");
+      track.scrollTo({ left: 0 });
+      $("#carouselCount").textContent = `(${films.length} films)`;
+    } catch (e) {
+      if (id !== reqId) return;
+      track.innerHTML = `<p class="muted-note">${escapeHtml(
+        e.message || "Could not load films."
+      )}</p>`;
+    }
   }
+  $("#catTabs").addEventListener("click", (e) => {
+    const t = e.target.closest(".cat-tab");
+    if (!t) return;
+    document
+      .querySelectorAll(".cat-tab")
+      .forEach((x) => x.classList.remove("active"));
+    t.classList.add("active");
+    load(t.dataset.region);
+  });
+  load("Any region");
   track.addEventListener("click", (e) => {
     const c = e.target.closest(".poster-card");
     if (!c) return;

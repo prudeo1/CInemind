@@ -112,7 +112,7 @@
 
         <div class="carousel" id="posterCarousel">
           <div class="carousel-head">
-            <span class="kicker">TRENDING NOW <em id="carouselCount"></em></span>
+            <span class="kicker">TRENDING WORLDWIDE <em id="carouselCount"></em></span>
             <div class="carousel-controls">
               <button
                 type="button"
@@ -131,6 +131,19 @@
                 →
               </button>
             </div>
+          </div>
+          <div class="cat-tabs" id="catTabs" role="tablist" aria-label="Film categories">
+            <button type="button" class="cat-tab active" data-region="Any region">All</button>
+            <button type="button" class="cat-tab" data-region="Korean">Korean</button>
+            <button type="button" class="cat-tab" data-region="Anime">Anime</button>
+            <button type="button" class="cat-tab" data-region="American (Hollywood)">Hollywood</button>
+            <button type="button" class="cat-tab" data-region="Bollywood / Indian">Bollywood</button>
+            <button type="button" class="cat-tab" data-region="Nollywood (Nigerian)">Nollywood</button>
+            <button type="button" class="cat-tab" data-region="Japanese">Japanese</button>
+            <button type="button" class="cat-tab" data-region="French">French</button>
+            <button type="button" class="cat-tab" data-region="Spanish / Latin American">Latin</button>
+            <button type="button" class="cat-tab" data-region="Chinese / Hong Kong">Chinese</button>
+            <button type="button" class="cat-tab" data-region="British">British</button>
           </div>
           <div class="carousel-track" id="posterTrack">
             <p class="muted-note" id="carouselNote">Loading trending films…</p>
@@ -230,6 +243,7 @@
               >PICK YOUR GENRES <span class="optional">(OPTIONAL)</span></label
             >
             <div class="chips" id="genreChips">
+              <button type="button" class="chip" data-genre="Romance">Romance</button>
               <button type="button" class="chip" data-genre="Sci-Fi">Sci-Fi</button>
               <button type="button" class="chip" data-genre="Thriller">Thriller</button>
               <button type="button" class="chip" data-genre="Drama">Drama</button>
@@ -238,7 +252,35 @@
               <button type="button" class="chip" data-genre="Action">Action</button>
               <button type="button" class="chip" data-genre="Animation">Animation</button>
               <button type="button" class="chip" data-genre="Horror">Horror</button>
+              <button type="button" class="chip" data-genre="Crime">Crime</button>
+              <button type="button" class="chip" data-genre="Fantasy">Fantasy</button>
+              <button type="button" class="chip" data-genre="Adventure">Adventure</button>
+              <button type="button" class="chip" data-genre="Family">Family</button>
+              <button type="button" class="chip" data-genre="War">War</button>
+              <button type="button" class="chip" data-genre="History">History</button>
+              <button type="button" class="chip" data-genre="Music">Music</button>
+              <button type="button" class="chip" data-genre="Documentary">Documentary</button>
+              <button type="button" class="chip" data-genre="Western">Western</button>
             </div>
+            <label class="second-label" for="regionSelect">REGION / LANGUAGE <span class="optional">(KOREAN, ANIME, BOLLYWOOD…)</span></label>
+            <select id="regionSelect">
+                  <option>Any region</option>
+                  <option>American (Hollywood)</option>
+                  <option>Korean</option>
+                  <option>Japanese</option>
+                  <option>Anime</option>
+                  <option>Bollywood / Indian</option>
+                  <option>Nollywood (Nigerian)</option>
+                  <option>Chinese / Hong Kong</option>
+                  <option>French</option>
+                  <option>Spanish / Latin American</option>
+                  <option>Italian</option>
+                  <option>German</option>
+                  <option>Turkish</option>
+                  <option>Thai</option>
+                  <option>British</option>
+                  <option>Scandinavian</option>
+            </select>
             <div class="select-row">
               <div>
                 <label for="eraSelect">RELEASE ERA</label>
