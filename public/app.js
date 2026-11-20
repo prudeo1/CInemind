@@ -319,3 +319,87 @@ async function boot() {
   }
 }
 boot();
+
+/* ---- Front-end additions (UI only; no backend changes) ---- */
+// Mobile menu
+(function () {
+  const btn = $("#menuBtn");
+  const setOpen = (open) => {
+    document.body.classList.toggle("nav-open", open);
+    btn.setAttribute("aria-expanded", String(open));
+  };
+  btn.addEventListener("click", () =>
+    setOpen(!document.body.classList.contains("nav-open"))
+  );
+  document
+    .querySelectorAll("#mainNav a")
+    .forEach((a) => a.addEventListener("click", () => setOpen(false)));
+})();
+
+// Footer link opens the account panel
+$("#footerAccount").addEventListener("click", (e) => {
+  e.preventDefault();
+  $("#accountPanel").classList.remove("hidden");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+// Highlight the nav link for the section in view
+(function () {
+  const links = [...document.querySelectorAll("#mainNav .nav-link")];
+  const map = new Map(
+    links.map((l) => [l.getAttribute("href").slice(1), l])
+  );
+  if (!("IntersectionObserver" in window)) return;
+  const io = new IntersectionObserver(
+    (entries) =>
+      entries.forEach((en) => {
+        if (!en.isIntersecting) return;
+        links.forEach((l) => l.classList.remove("active"));
+        map.get(en.target.id)?.classList.add("active");
+      }),
+    { rootMargin: "-40% 0px -55% 0px" }
+  );
+  map.forEach((_, id) => {
+    const el = document.getElementById(id);
+    if (el) io.observe(el);
+  });
+})();
+
+// Trending carousel (uses the existing GET /api/movies endpoint)
+(async function () {
+  const track = $("#posterTrack");
+  const scrollByCards = (dir) =>
+    track.scrollBy({ left: dir * track.clientWidth * 0.8, behavior: "smooth" });
+  $("#carPrev").addEventListener("click", () => scrollByCards(-1));
+  $("#carNext").addEventListener("click", () => scrollByCards(1));
+  try {
+    const d = await api("/api/movies");
+    const films = (d.results || []).filter((m) => m.poster).slice(0, 12);
+    if (!films.length) throw new Error("none");
+    track.innerHTML = films
+      .map(
+        (m) =>
+          `<button type="button" class="poster-card" data-title="${escapeHtml(
+            m.title
+          )}"><img src="${escapeHtml(m.poster)}" alt="${escapeHtml(
+            m.title
+          )} poster" loading="lazy"><span>${escapeHtml(
+            m.title
+          )}<small>${escapeHtml(m.year)} · ★ ${escapeHtml(
+            m.rating
+          )}</small></span></button>`
+      )
+      .join("");
+    $("#carouselCount").textContent = `(${films.length} films)`;
+  } catch (e) {
+    $("#posterCarousel").classList.add("hidden");
+  }
+  track.addEventListener("click", (e) => {
+    const c = e.target.closest(".poster-card");
+    if (!c) return;
+    $("#movieTitle").value = c.dataset.title;
+    location.hash = "#summarize";
+    setTimeout(() => $("#movieTitle").focus({ preventScroll: true }), 400);
+    toast(`“${c.dataset.title}” ready — press Analyze.`);
+  });
+})();
