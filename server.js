@@ -30,7 +30,7 @@ function movieShape(m) {
 }
 async function gemini(prompt, json = false) {
   if (!hasGemini()) return null;
-  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
   const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
     method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ contents:[{role:'user',parts:[{text:prompt}]}], generationConfig:{temperature:0.55,maxOutputTokens:1400,...(json?{responseMimeType:'application/json'}:{})} })

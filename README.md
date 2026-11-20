@@ -39,6 +39,8 @@ Docs: https://developer.themoviedb.org/docs/getting-started
 
 Docs: https://ai.google.dev/gemini-api/docs/get-started
 
+If the app reports a 401, replace `GEMINI_API_KEY` with a valid key from Google AI Studio and restart the server. A 403 usually means the API or key restrictions need attention; a 429 indicates a quota or rate limit.
+
 ### Supabase (optional)
 
 1. Create a Supabase project.
