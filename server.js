@@ -4,6 +4,7 @@ const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -72,14 +73,41 @@ function movieShape(m) {
 }
 async function gemini(prompt, json = false) {
   if (!hasGemini()) return null;
-  const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ contents:[{role:'user',parts:[{text:prompt}]}], generationConfig:{temperature:0.55,maxOutputTokens:1400,...(json?{responseMimeType:'application/json'}:{})} })
+  const primary = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+  const models = [primary, 'gemini-3.6-flash', 'gemini-3.5-flash-lite'].filter((m, i, arr) => arr.indexOf(m) === i);
+  const body = JSON.stringify({
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.55, maxOutputTokens: 4096, ...(json ? { responseMimeType: 'application/json' } : {}) }
   });
-  if (!r.ok) { const detail = await r.text(); console.error('Gemini error:', r.status, detail.slice(0,500)); throw new Error(`AI request failed (${r.status}). Check your Gemini key and quota.`); }
-  const data = await r.json();
-  return data.candidates?.[0]?.content?.parts?.map(p=>p.text || '').join('\n') || '';
+  let lastStatus = 0;
+  for (const model of models) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      let r;
+      try {
+        r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body
+        });
+      } catch (netErr) {
+        lastStatus = 0;
+        console.error(`Gemini ${model} network error:`, netErr.message);
+        await new Promise(res => setTimeout(res, 1000 * (attempt + 1)));
+        continue;
+      }
+      if (r.ok) {
+        const data = await r.json();
+        return data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || '';
+      }
+      lastStatus = r.status;
+      const detail = await r.text();
+      console.error(`Gemini ${model} error (attempt ${attempt + 1}):`, r.status, detail.slice(0, 500));
+      if (![429, 500, 503].includes(r.status)) break; // permanent error: skip to next model
+      await new Promise(res => setTimeout(res, 1000 * (attempt + 1)));
+    }
+  }
+  if (lastStatus === 503 || lastStatus === 500) throw new Error("Google's AI is overloaded right now. Please try again in a moment.");
+  if (lastStatus === 429) throw new Error('Gemini quota or rate limit reached. Please wait a bit and try again.');
+  if (lastStatus === 0) throw new Error('Could not reach the Gemini service. Check your internet connection.');
+  throw new Error(`AI request failed (${lastStatus}). Check your Gemini key and model name.`);
 }
 function safeText(v, max=240) { return typeof v === 'string' ? v.trim().slice(0,max) : ''; }
 
@@ -169,4 +197,11 @@ app.post('/api/recommend', async (req,res) => {
     res.json({intro,picks,source:raw&&picks.length?'ai':'tmdb'});
   } catch(e){console.error(e);res.status(502).json({error:e.message||'Could not create recommendations.'});}
 });
-app.listen(PORT,()=>console.log(`CINEMIND running at http://localhost:${PORT}`));
+const server = app.listen(PORT, () => console.log(`CINEMIND running at http://localhost:${PORT}`));
+server.on('error', err => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use. Stop the other process (kill -9 $(lsof -ti :${PORT})) or run: PORT=3001 npm start`);
+    process.exit(1);
+  }
+  throw err;
+});
