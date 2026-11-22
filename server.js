@@ -7,6 +7,7 @@ const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
+try { app.use(require('compression')()); } catch { console.log('Tip: run `npm i compression` to enable faster responses.'); }
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: '30kb' }));
 app.use('/api/', rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: 'draft-7', legacyHeaders: false }));
@@ -68,12 +69,22 @@ async function tmdb(endpoint, params = {}) {
   if (!r.ok) throw new Error(`Movie database request failed (${r.status}).`);
   return r.json();
 }
+const cache = new Map();
+async function cached(key, ttlMs, fn) {
+  const hit = cache.get(key);
+  if (hit && hit.exp > Date.now()) return hit.val;
+  const val = await fn();
+  cache.set(key, { val, exp: Date.now() + ttlMs });
+  if (cache.size > 500) cache.delete(cache.keys().next().value);
+  return val;
+}
+
 function movieShape(m) {
   return { id:m.id, title:m.title, year:m.release_date?.slice(0,4) || '—', releaseDate:m.release_date || '', rating:m.vote_average ? Number(m.vote_average).toFixed(1) : '—', poster:m.poster_path ? `${IMAGE_BASE}${m.poster_path}` : null, backdrop:m.backdrop_path ? `https://image.tmdb.org/t/p/w1280${m.backdrop_path}` : null, overview:m.overview || 'No synopsis is available yet.', genreIds:m.genre_ids || m.genres?.map(g=>g.id) || [], genres:m.genres?.map(g=>g.name) || [], language:m.original_language || '' };
 }
-async function gemini(prompt, json = false) {
+async function gemini(prompt, json = false, modelOverride) {
   if (!hasGemini()) return null;
-  const primary = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+  const primary = modelOverride || process.env.GEMINI_MODEL || 'gemini-3.8-flash';
   const models = [primary, 'gemini-3.6-flash', 'gemini-3.5-flash-lite'].filter((m, i, arr) => arr.indexOf(m) === i);
   const body = JSON.stringify({
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -119,13 +130,13 @@ app.get('/api/movies', async (req,res) => {
     const r = REGIONS[regionName];
     let results;
     if (regionName === 'Any region') {
-      results = (await tmdb('/movie/popular',{page:1})).results || [];
+      results = (await cached('popular', 600_000, () => tmdb('/movie/popular',{page:1}))).results || [];
     } else {
       const p = { include_adult:false, sort_by:'popularity.desc', 'vote_count.gte':30, page:1 };
       if (r.country) p.with_origin_country = r.country;
       if (r.genre) p.with_genres = r.genre;
       const langs = r.lang ? r.lang.split('|') : [null];
-      const lists = await Promise.all(langs.map(l => tmdb('/discover/movie', { ...p, ...(l ? { with_original_language: l } : {}) })));
+      const lists = await Promise.all(langs.map(l => { const q = { ...p, ...(l ? { with_original_language: l } : {}) }; return cached('disc:' + JSON.stringify(q), 600_000, () => tmdb('/discover/movie', q)); }));
       results = lists.flatMap(x => x.results || []).sort((a,b) => (b.popularity||0) - (a.popularity||0));
     }
     res.json({results:results.map(movieShape)});
@@ -152,7 +163,7 @@ app.post('/api/summarize', async (req,res) => {
       const crew=(details.credits?.crew||[]).find(c=>c.job==='Director')?.name || 'Not listed';
       const context=`Title: ${m.title} (${m.year})\nGenres: ${m.genres.join(', ')}\nOverview: ${m.overview}\nDirector: ${crew}\nMain cast: ${cast}\nRuntime: ${details.runtime||'Unknown'} minutes`;
       const prompt=`You are CINEMIND, an accurate and engaging film analyst. Use ONLY the verified movie facts below as factual grounding. Do not invent scenes, character names, quotes, or plot details. If the synopsis is too limited to support a detailed claim, say so.\n${context}\n\nCreate a ${mode==='full'?'detailed plot summary including the ending. Clearly mark the entire section as SPOILERS.':'spoiler-free summary. Do not reveal twists, deaths, the ending, or hidden identities.'}\nThen include these headings: The premise; Story and themes; Mood and pacing; What makes it worth watching; Who will enjoy it. Keep it informative, well-written and specific.`;
-      const answer=await gemini(prompt);
+      const answer=await cached(`sum:${found.id}:${mode}`, 86_400_000, async () => { const a = await gemini(prompt); if (!a) throw Object.assign(new Error('empty'), { skip: true }); return a; }).catch(e => { if (e.skip) return null; throw e; });
       if(!answer) return res.json({movie:m,answer:`## ${m.title} (${m.year})\n\n${m.overview}\n\nLive movie data is connected. Add a Gemini API key to generate the full AI analysis.`,source:'tmdb'});
       return res.json({movie:m,answer,source:'ai'});
     }
@@ -181,8 +192,8 @@ app.post('/api/recommend', async (req,res) => {
     const jobs=[];
     for(const lang of langs){
       const b2={...base,...(lang?{with_original_language:lang}:{})};
-      for(const page of (multi?[1]:[1,2,3])) jobs.push(tmdb('/discover/movie',{...b2,sort_by:'popularity.desc',page}));
-      for(const page of (multi?[1]:[1,2])) jobs.push(tmdb('/discover/movie',{...b2,sort_by:'vote_average.desc','vote_count.gte':strict?150:500,page}));
+      for(const page of (multi?[1]:[1,2])) jobs.push(cached('rec:'+JSON.stringify({...b2,pop:page}),600_000,()=>tmdb('/discover/movie',{...b2,sort_by:'popularity.desc',page})));
+      for(const page of [1]) jobs.push(cached('rec:'+JSON.stringify({...b2,top:page,s:strict}),600_000,()=>tmdb('/discover/movie',{...b2,sort_by:'vote_average.desc','vote_count.gte':strict?150:500,page})));
     }
     const settled=await Promise.allSettled(jobs);
     const pool=settled.filter(x=>x.status==='fulfilled').flatMap(x=>x.value.results||[]);
@@ -191,7 +202,7 @@ app.post('/api/recommend', async (req,res) => {
     if(!unique.length) return res.status(404).json({error:'No matching films came back. Try a broader genre, region or era.'});
     const prompt=`You are CINEMIND, a film recommendation engine. Choose the 6 best-fitting DISTINCT movies from the supplied candidate list ONLY. Never invent a title or ID. Aim for variety (different decades, countries and tones where the filters allow). Match the user's mood semantically, respect selected genres, release era and exclusions. Exclude films whose genre or synopsis clearly conflicts with the avoid field. Return strict JSON: {"intro":"one concise personalised sentence","picks":[{"id":number,"reason":"one specific sentence explaining the match"}]}. Do not add markdown.\nUSER MOOD: ${mood||'Not specified'}\nGENRES: ${genres.join(', ')||'Any'}\nERA: ${era}\nREGION/LANGUAGE: ${regionName}\nAVOID: ${avoid||'Nothing'}\nCANDIDATES: ${JSON.stringify(unique.map(m=>({id:m.id,title:m.title,year:m.year,genres:m.genres,overview:m.overview,rating:m.rating})))}`;
     let picks=[], intro='A selection based on your preferences.';
-    const raw=await gemini(prompt,true);
+    const raw=await gemini(prompt,true,process.env.GEMINI_FAST_MODEL||'gemini-3.5-flash-lite');
     if(raw){try{const parsed=JSON.parse(raw.replace(/^```json\s*/i,'').replace(/```$/,'').trim());intro=safeText(parsed.intro,220)||intro;const byId=new Map(unique.map(m=>[m.id,m]));picks=(parsed.picks||[]).filter(p=>byId.has(Number(p.id))).slice(0,6).map(p=>({...byId.get(Number(p.id)),reason:safeText(p.reason,240)}));}catch(err){console.error('Could not parse recommendation JSON',err.message);}}
     if(!picks.length) picks=unique.slice(0,6).map(m=>({...m,reason:`A popular ${m.genres.slice(0,2).join(' / ')||'film'} pick to explore based on your preferences.`}));
     res.json({intro,picks,source:raw&&picks.length?'ai':'tmdb'});
